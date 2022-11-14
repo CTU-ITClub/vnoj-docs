@@ -1,16 +1,18 @@
 ## Installing the prerequisites
 
+?> We highly recommend you to use new server and don't install anything. Using new server will help you to avoid any conflicts with installation progress. We recommend to use Ubuntu Server 20.04 LTS. All commands below are run as root.
+
 ```shell-session
 $ apt update
-$ apt install git gcc g++ make python3-dev python3-pip libxml2-dev libxslt1-dev zlib1g-dev gettext curl redis-server
+$ apt install -y git gcc g++ make python3-dev python3-pip libxml2-dev libxslt1-dev zlib1g-dev gettext curl redis-server
 $ curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-$ apt install nodejs
-$ npm install -g sass postcss-cli postcss autoprefixer
+$ apt install -y nodejs
+$ npm install -g sass@1.39.0 postcss-cli@8.3.1 postcss@8.3.6 autoprefixer@10.3.4
 ```
 
 ## Creating the database
 
-Next, we will set up the database using MariaDB. The VNOJ is only tested to work with MySQL, and it is unlikely to work with anything else. Please visit [the MariaDB site](https://downloads.mariadb.org/mariadb/repositories/) and follow the download instructions.
+Next, we will set up the database using MariaDB. The VNOJ is only tested to work with MySQL, and it is unlikely to work with anything else. Please visit [the MariaDB site](https://mariadb.org/download/?t=repo-config) and follow the download instructions.
 
 When asked, you should select the latest MariaDB version.
 
@@ -19,49 +21,50 @@ $ apt update
 $ apt install mariadb-server libmysqlclient-dev
 ```
 
+After installing MariaDB, you should config for root password:
+```shell-session
+$ mysql_secure_installation
+```
+
 The next step is to set up the database itself. You should execute the commands listed below to create the necessary database and user.
 
 ```shell-session
 $ sudo mysql
-mariadb> CREATE DATABASE dmoj DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;
-mariadb> GRANT ALL PRIVILEGES ON dmoj.* TO 'dmoj'@'localhost' IDENTIFIED BY '<mariadb user password>';
+mariadb> CREATE DATABASE cicoj DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;
+mariadb> GRANT ALL PRIVILEGES ON cicoj.* TO 'cicoj'@'localhost' IDENTIFIED BY '<mariadb user password>';
 mariadb> exit
 ```
 
 ## Installing prerequisites
 
-Now that you are done, you can start installing the site. First, create a virtual environment and activate it. Here, we'll create a virtual environment named `vnojsite`.
+Now that you are done, you can start installing the site. First, create a virtual environment and activate it. Here, we'll create a virtual environment named `oj`.
 
 ```shell-session
-$ python3 -m venv vnojsite
-$ . vnojsite/bin/activate
+$ python3 -m venv oj
+$ . oj/bin/activate
 ```
-<<<<<<< HEAD
-=======
-You should see `(vnojsite)` prepended to your shell. Henceforth, `(vnojsite)` commands assumes you are in the code directory, with virtual environment active.
->>>>>>> Basic docs for VNOJ (#1)
-
-You should see `(dmojsite)` prepended to your shell. Henceforth, `(dmojsite)` commands assume you are in the code directory, with the virtual environment active.
+You should see `(oj)` prepended to your shell. Henceforth, `(oj)` commands assumes you are in the code directory, with virtual environment active. If you want to deactivate the virtual environment, you can run `deactivate`.
 
 ?> The virtual environment will help keep the modules needed separate from the system package manager, and save you many headaches when updating. Read more about virtual environments [here](https://docs.python.org/3/tutorial/venv.html).
 
 Now, fetch the site source code:
 
 ```shell-session
-(vnojsite) $ git clone https://github.com/VNOI-Admin/OJ.git
-(vnojsite) $ cd site
-(vnojsite) $ git submodule init
-(vnojsite) $ git submodule update
+(oj) $ git clone https://github.com/lvdat/OJ.git
+(oj) $ cd OJ
+(oj) $ git checkout contest # Only use this command if you want install OJ for contest
+(oj) $ git submodule init
+(oj) $ git submodule update
 ```
 
 Install Python dependencies into the virtual environment.
 
 ```shell-session
-(vnojsite) $ pip3 install -r requirements.txt
-(vnojsite) $ pip3 install mysqlclient
+(oj) $ pip3 install -r requirements.txt
+(oj) $ pip3 install mysqlclient
 ```
 
-You will now need to configure `dmoj/local_settings.py`. You should make a copy of [this sample settings file](https://github.com/DMOJ/docs/blob/master/sample_files/local_settings.py) and read through it, making changes as necessary. Most importantly, you will want to update MariaDB credentials.
+You will now need to configure `dmoj/local_settings.py`. You should make a copy of [this sample settings file](https://github.com/CTU-ITClub/cicoj-docs/blob/master/sample_files/local_settings.py) and read through it, making changes as necessary. Most importantly, you will want to update MariaDB credentials.
 
 ?>  Leave debug mode on for now; we'll disable it later after we've verified that the site works. <br> <br>
     Generally, it's recommended that you add your settings in `dmoj/local_settings.py` rather than modifying `dmoj/settings.py` directly. `settings.py` will automatically read `local_settings.py` and load it, so write your configuration there.
@@ -69,27 +72,27 @@ You will now need to configure `dmoj/local_settings.py`. You should make a copy 
 Now, you should verify that everything is going according to plan.
 
 ```shell-session
-(vnojsite) $ python3 manage.py check
+(oj) $ python3 manage.py check
 ```
 
 ## Compiling assets
 VNOJ uses `sass` and `autoprefixer` to generate the site stylesheets. VNOJ comes with a `make_style.sh` script that may be run to compile and optimize the stylesheets.
 
 ```shell-session
-(vnojsite) $ ./make_style.sh
+(oj) $ ./make_style.sh
 ```
 
 Now, collect static files into `STATIC_ROOT` as specified in `dmoj/local_settings.py`.
 
 ```shell-session
-(vnojsite) $ python3 manage.py collectstatic
+(oj) $ python3 manage.py collectstatic
 ```
 
 You will also need to generate internationalization files.
 
 ```shell-session
-(vnojsite) $ python3 manage.py compilemessages
-(vnojsite) $ python3 manage.py compilejsi18n
+(oj) $ python3 manage.py compilemessages
+(oj) $ python3 manage.py compilejsi18n
 ```
 
 ## Setting up database tables
@@ -97,15 +100,15 @@ You will also need to generate internationalization files.
 We must generate the schema for the database, since it is currently empty.
 
 ```shell-session
-(vnojsite) $ python3 manage.py migrate
+(oj) $ python3 manage.py migrate
 ```
 
 Next, load some initial data so that your install is not entirely blank.
 
 ```shell-session
-(vnojsite) $ python3 manage.py loaddata navbar
-(vnojsite) $ python3 manage.py loaddata language_small
-(vnojsite) $ python3 manage.py loaddata demo
+(oj) $ python3 manage.py loaddata navbar
+(oj) $ python3 manage.py loaddata language_small
+(oj) $ python3 manage.py loaddata demo
 ```
 
 !>  Keep in mind that the `demo` fixture creates a superuser account with a username and password of `admin`. If your
@@ -114,7 +117,7 @@ Next, load some initial data so that your install is not entirely blank.
 You should create an admin account with which to log in initially.
 
 ```shell-session
-(vnojsite) $ python3 manage.py createsuperuser
+(oj) $ python3 manage.py createsuperuser
 ```
 
 ## Setting up Celery
@@ -135,7 +138,7 @@ We will test that Celery works soon.
 At this point, you should attempt to run the server, and see if it all works.
 
 ```shell-session
-(vnojsite) $ python3 manage.py runserver 0.0.0.0:8000
+(oj) $ python3 manage.py runserver 0.0.0.0:8000
 ```
 
 You should Ctrl-C to exit after verifying.
@@ -146,7 +149,7 @@ You should Ctrl-C to exit after verifying.
 You should also test to see if `bridged` runs.
 
 ```shell-session
-(vnojsite) $ python3 manage.py runbridged
+(oj) $ python3 manage.py runbridged
 ```
 
 If there are no errors after about 10 seconds, it probably works.
@@ -155,7 +158,7 @@ You should Ctrl-C to exit.
 Next, test that the Celery workers run.
 
 ```shell-session
-(vnojsite) $ celery -A dmoj_celery worker
+(oj) $ celery -A dmoj_celery worker
 ```
 
 You can Ctrl-C to exit.
@@ -166,18 +169,18 @@ You can Ctrl-C to exit.
 In the rest of this guide, we will be installing `uwsgi` and `nginx` to serve the site, using `supervisord`
 to keep `site` and `bridged` running. It's likely other configurations may work, but they are unsupported.
 
-First, copy our `uwsgi.ini` ([link](https://github.com/VNOI-Admin/vnoj-docs/blob/master/sample_files/uwsgi.ini)). You should change the paths to reflect your install.
+First, copy our `uwsgi.ini` ([link](https://github.com/CTU-ITClub/cicoj-docs/blob/master/sample_files/uwsgi.ini)). You should change the paths to reflect your install.
 
 You need to install `uwsgi`.
 
 ```shell-session
-(vnojsite) $ pip3 install uwsgi
+(oj) $ pip3 install uwsgi
 ```
 
 To test, run:
 
 ```shell-session
-(vnojsite) $ uwsgi --ini uwsgi.ini
+(oj) $ uwsgi --ini uwsgi.ini
 ```
 
 If it says workers are spawned, it probably works.
@@ -191,7 +194,7 @@ You should now install `supervisord` and configure it.
 $ apt install supervisor
 ```
 
-Copy our `site.conf` ([link](https://github.com/VNOI-Admin/vnoj-docs/blob/master/sample_files/site.conf)) to `/etc/supervisor/conf.d/site.conf`, `bridged.conf` ([link](https://github.com/VNOI-Admin/vnoj-docs/blob/master/sample_files/bridged.conf)) to `/etc/supervisor/conf.d/bridged.conf`, `celery.conf` ([link](https://github.com/VNOI-Admin/vnoj-docs/blob/master/sample_files/celery.conf)) to `/etc/supervisor/conf.d/celery.conf` and fill in the fields.
+Copy our `site.conf` ([link](https://github.com/CTU-ITClub/cicoj-docs/blob/master/sample_files/site.conf)) to `/etc/supervisor/conf.d/site.conf`, `bridged.conf` ([link](https://github.com/CTU-ITClub/cicoj-docs/blob/master/sample_files/bridged.conf)) to `/etc/supervisor/conf.d/bridged.conf`, `celery.conf` ([link](https://github.com/CTU-ITClub/cicoj-docs/blob/master/sample_files/celery.conf)) to `/etc/supervisor/conf.d/celery.conf` and fill in the fields.
 
 Next, reload `supervisord` and check that the site, bridged, and celery have started.
 
@@ -239,7 +242,7 @@ Create `config.js`. This assumes you use `nginx`, or there be dragons.
 You may need to shuffle ports if they are already used.
 
 ```shell-session
-(vnojsite) $ cat > websocket/config.js
+(oj) $ cat > websocket/config.js
 module.exports = {
     get_host: '127.0.0.1',
     get_port: 15100,
@@ -260,11 +263,11 @@ You need to uncomment the relevant section in the `nginx` configuration.
 Need to install the dependencies.
 
 ```shell-session
-(vnojsite) $ npm install qu ws simplesets
-(vnojsite) $ pip3 install websocket-client
+(oj) $ npm install qu ws simplesets
+(oj) $ pip3 install websocket-client
 ```
 
-Now copy `wsevent.conf` ([link](https://github.com/VNOI-Admin/vnoj-docs/blob/master/sample_files/wsevent.conf)) to `/etc/supervisor/conf.d/wsevent.conf`, changing paths, and then update supervisor and nginx.
+Now copy `wsevent.conf` ([link](https://github.com/CTU-ITClub/cicoj-docs/blob/master/sample_files/wsevent.conf)) to `/etc/supervisor/conf.d/wsevent.conf`, changing paths, and then update supervisor and nginx.
 
 ```shell-session
 $ supervisorctl update

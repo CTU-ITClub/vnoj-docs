@@ -36,8 +36,8 @@ CACHES = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dmoj',
-        'USER': 'dmoj',
+        'NAME': 'cicoj',
+        'USER': 'cicoj',
         'PASSWORD': '<mariadb user password>',
         'HOST': '127.0.0.1',
         'OPTIONS': {
